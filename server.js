@@ -1,16 +1,21 @@
 const http = require('http');
 const url  = require('url');
 
-function start(route) {
-  function onRequest(req, res) {
-    var pathname = url.parse(req.url).pathname;
+function start(route, handle) {
+  function onRequest(request, response) {
+    var postData = '';
+    var pathname = url.parse(request.url).pathname;
     console.log('Req for ' + pathname + ' received');
+    request.setEncoding('utf8');
 
-    route(pathname);
+    request.addListener('data', function(postDataChunk) {
+      postData += postDataChunk;
+      console.log('Request POST data chunk' + postDataChunk + ' .');
+    })
 
-    res.writeHead(200, { 'Content-Type': 'text/plain'});
-    res.write('Hello world');
-    res.end()
+    request.addListener('end', function() {
+      route(handle, pathname, response, postData);
+    })
   };
   http.createServer(onRequest).listen(8888);
   console.log('Server has started');
